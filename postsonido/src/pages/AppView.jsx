@@ -171,3 +171,49 @@ export default function AppView() {
         </div>
       </div>
       {editCap && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100 }}>
+          <div style={{ background:'#1a1a1a', border:'1px solid #333', borderRadius:16, padding:'1.5rem', width:420, maxWidth:'95vw', maxHeight:'85vh', overflowY:'auto' }}>
+            <h3 style={{ fontSize:16, fontWeight:600, margin:'0 0 1rem' }}>Cap. {editCap.num} — {serieName}</h3>
+            {myKeys.map(k => (
+              <div key={k} style={{ marginBottom:12 }}>
+                <label style={{ fontSize:12, color:'#aaa', display:'block', marginBottom:4 }}>{DEPT_LABELS[k] || k} — estatus</label>
+                <select value={form['s_' + k] || ''} onChange={e => setForm(f => ({ ...f, ['s_' + k]: e.target.value }))}
+                  style={{ width:'100%', padding:'8px 10px', background:'#111', border:'1px solid #333', borderRadius:8, color:'#fff', fontSize:13, boxSizing:'border-box' }}>
+                  {TASK_STATUSES.map(s => <option key={s} value={s}>{s || '— sin estatus —'}</option>)}
+                </select>
+              </div>
+            ))}
+            <div style={{ marginBottom:12 }}>
+              <label style={{ fontSize:12, color:'#aaa', display:'block', marginBottom:4 }}>Observación</label>
+              <textarea value={form.obs || ''} onChange={e => setForm(f => ({ ...f, obs: e.target.value }))}
+                style={{ width:'100%', padding:'8px 10px', background:'#111', border:'1px solid #333', borderRadius:8, color:'#fff', fontSize:13, minHeight:70, resize:'vertical', boxSizing:'border-box' }} />
+            </div>
+            <div style={{ marginBottom:12 }}>
+              <label style={{ fontSize:12, color:'#aaa', display:'block', marginBottom:4 }}>Fase general</label>
+              <div style={{ padding:'8px 10px', background:'#111', border:'1px solid #2a2a2a', borderRadius:8, color:'#888', fontSize:13 }}>{editCap.phase || 'Pendiente'}</div>
+            </div>
+            <div style={{ marginBottom:12 }}>
+              <label style={{ fontSize:12, color:'#aaa', display:'block', marginBottom:4 }}>Tu fecha de entrega</label>
+              <div style={{ padding:'8px 10px', background:'#111', border:'1px solid #2a2a2a', borderRadius:8, color:'#9FE1CB', fontSize:13 }}>
+                {(isDX ? editCap.fechas?.dx : editCap.fechas?.[userData?.role]) || 'Aún no asignada'}
+              </div>
+            </div>
+            {editCap.obs?.jefe && (
+              <div style={{ marginBottom:12 }}>
+                <label style={{ fontSize:12, color:'#aaa', display:'block', marginBottom:4 }}>Nota del jefe</label>
+                <div style={{ padding:'8px 10px', background:'#1a1500', border:'1px solid #333', borderRadius:8, color:'#FAC775', fontSize:12 }}>{editCap.obs.jefe}</div>
+              </div>
+            )}
+            <div style={{ display:'flex', gap:8, justifyContent:'flex-end', marginTop:16 }}>
+              <button style={{ background:'transparent', border:'1px solid #333', borderRadius:8, color:'#aaa', padding:'7px 16px', fontSize:13, cursor:'pointer' }} onClick={() => setEditCap(null)}>Cancelar</button>
+              <button style={{ background:'#1D9E75', border:'none', borderRadius:8, color:'#fff', padding:'7px 16px', fontSize:13, fontWeight:600, cursor:'pointer', opacity: saving ? .6 : 1 }} onClick={save} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+const TH = { padding:'8px 10px', textAlign:'left', fontWeight:500, fontSize:11, color:'#888', borderBottom:'1px solid #222', whiteSpace:'nowrap' }
+const TD = { padding:'8px 10px', verticalAlign:'middle' }
