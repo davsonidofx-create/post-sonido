@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
       if (firebaseUser) {
         setUser(firebaseUser)
         const snap = await getDoc(doc(db, 'users', firebaseUser.uid))
-        if (snap.exists()) setUserData(snap.data())
+        if (snap.exists()) setUserData({ ...snap.data(), uid: firebaseUser.uid })
       } else {
         setUser(null)
         setUserData(null)
