@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { listenCaps, createCap, getTeamBySerie, getSeries } from '../lib/db'
+import { listenCaps, listenSeries, createCap, getTeamBySerie } from '../lib/db'
 import { notifyCapituloSubido } from '../lib/email'
 import { PHASE_STYLE } from '../lib/constants'
 
@@ -25,10 +25,8 @@ export default function CoordView() {
     }
     setLoading(false)
     if (userData.series && !userData.series.includes(serieId)) { navigate('/series'); return }
-    getSeries().then(series => {
-      const s = series.find(x => x.id === serieId)
-      if (s) setSerieName(s.name)
-    })
+    const unsubS = listenSeries(list => { const s = list.find(x => x.id === serieId); if (s) setSerieName(s.name) })
+    return () => unsubS()
     return listenCaps(serieId, setCaps)
   }, [serieId, userData])
 

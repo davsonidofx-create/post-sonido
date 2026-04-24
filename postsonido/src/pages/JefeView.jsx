@@ -131,11 +131,7 @@ export default function JefeView() {
     const unsub1 = listenCaps(serieId, setCaps)
     const unsub2 = listenObsBySerie(serieId, setObs)
     getTeamBySerie(serieId).then(setTeam)
-    getSeries().then(series => {
-      const s = series.find(x => x.id === serieId)
-      if (s) { setSerieName(s.name); setST_series(series) }
-      else setST_series(series)
-    })
+    const unsubS = listenSeries(list => { setST_series(list); const s = list.find(x => x.id === serieId); if (s) setSerieName(s.name) })
     return () => { unsub1(); unsub2() }
   }, [serieId, userData])
 
