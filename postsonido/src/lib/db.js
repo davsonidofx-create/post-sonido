@@ -90,6 +90,4 @@ export const listenObsBySerie = (serieId, cb) => {
 }
 
 export const addObservation = (data) => addDoc(collection(db, 'observations'), { ...data, createdAt: serverTimestamp() })
-export const listenSeries = (cb) => onSnapshot(collection(db, 'series'), snap => {
-  cb(snap.docs.map(d => ({ id: d.id, ...d.data() })))
 })
