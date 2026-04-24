@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { listenCaps, updateCap, addObservation, getTeamBySerie, getSeries } from '../lib/db'
+import { listenCaps, updateCap, addObservation, getTeamBySerie } from '../lib/db'
 import { ROLES, DEPT_LABELS, TASK_STATUSES, PHASE_STYLE, STATUS_STYLE } from '../lib/constants'
 import { notifyBloqueo, notifyCompleto } from '../lib/email'
 
@@ -28,9 +28,9 @@ export default function AppView() {
       navigate('/series')
       return
     }
-    getSeries().then(list => {
-      const s = list.find(x => x.id === serieId)
-      if (s) setSerieName(s.name)
+    import('../lib/db').then(m => m.getSeries().then(list => {
+  const s = list.find(x => x.id === serieId)
+  if (s) setSerieName(s.name)
     })
     const unsub = listenCaps(serieId, (data) => {
       setCaps(data)
