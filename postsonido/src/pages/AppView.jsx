@@ -1,3 +1,5 @@
+Salida
+
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
@@ -223,3 +225,4 @@ export default function AppView() {
 
 const TH = { padding:'8px 10px', textAlign:'left', fontWeight:500, fontSize:11, color:'#888', borderBottom:'1px solid #222', whiteSpace:'nowrap' }
 const TD = { padding:'8px 10px', verticalAlign:'middle' }
+Listo
