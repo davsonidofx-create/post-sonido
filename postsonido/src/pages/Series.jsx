@@ -108,7 +108,8 @@ export default function Series() {
         } catch(e) { console.log('Email error:', e) }
       }
 
-      setNotif(`"${form.name.trim()}" creado${validMembers.length > 0 ? \` y ${validMembers.length} miembro(s) notificado(s)\` : ''}.`)
+      const msg = validMembers.length > 0 ? `"${form.name.trim()}" creado y ${validMembers.length} miembro(s) notificado(s).` : `"${form.name.trim()}" creado exitosamente.`
+      setNotif(msg)
       setTimeout(() => setNotif(''), 5000)
       resetForm()
     } catch(e) {
