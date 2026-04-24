@@ -1,5 +1,3 @@
-Salida
-
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
@@ -125,7 +123,6 @@ export default function AppView() {
         </div>
         <button style={{ background:'transparent', border:'1px solid #333', borderRadius:8, color:'#888', padding:'5px 12px', fontSize:12, cursor:'pointer' }} onClick={logout}>Salir</button>
       </div>
-
       <div style={{ padding:'1.5rem' }}>
         <div style={{ display:'flex', gap:8, marginBottom:'1rem', flexWrap:'wrap' }}>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar cap..."
@@ -136,7 +133,6 @@ export default function AppView() {
             {['Pendiente','En proceso','En revision','Pendiente ajustes','Aprobado'].map(p => <option key={p}>{p}</option>)}
           </select>
         </div>
-
         <div style={{ overflowX:'auto', border:'1px solid #222', borderRadius:12 }}>
           <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
             <thead>
@@ -166,9 +162,7 @@ export default function AppView() {
                     {isDX ? <><td style={TD}>{stBadge(c.status?.dx)}</td><td style={TD}>{stBadge(c.status?.adr)}</td></> : <td style={TD}>{stBadge(c.status?.[userData?.role])}</td>}
                     <td style={TD}>{dateFmt(myFecha)}</td>
                     <td style={{ ...TD, fontSize:11, color:'#aaa', maxWidth:120, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{myObs || '—'}</td>
-                    <td style={TD}>
-                      <button style={{ background:'transparent', border:'1px solid #333', borderRadius:6, color:'#aaa', cursor:'pointer', padding:'2px 7px', fontSize:12 }} onClick={() => openEdit(c)}>✏</button>
-                    </td>
+                    <td style={TD}><button style={{ background:'transparent', border:'1px solid #333', borderRadius:6, color:'#aaa', cursor:'pointer', padding:'2px 7px', fontSize:12 }} onClick={() => openEdit(c)}>✏</button></td>
                   </tr>
                 )
               })}
@@ -176,53 +170,4 @@ export default function AppView() {
           </table>
         </div>
       </div>
-
       {editCap && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100 }}>
-          <div style={{ background:'#1a1a1a', border:'1px solid #333', borderRadius:16, padding:'1.5rem', width:420, maxWidth:'95vw', maxHeight:'85vh', overflowY:'auto' }}>
-            <h3 style={{ fontSize:16, fontWeight:600, margin:'0 0 1rem' }}>Cap. {editCap.num} — {serieName}</h3>
-            {myKeys.map(k => (
-              <div key={k} style={{ marginBottom:12 }}>
-                <label style={{ fontSize:12, color:'#aaa', display:'block', marginBottom:4 }}>{DEPT_LABELS[k] || k} — estatus</label>
-                <select value={form['s_' + k] || ''} onChange={e => setForm(f => ({ ...f, ['s_' + k]: e.target.value }))}
-                  style={{ width:'100%', padding:'8px 10px', background:'#111', border:'1px solid #333', borderRadius:8, color:'#fff', fontSize:13, boxSizing:'border-box' }}>
-                  {TASK_STATUSES.map(s => <option key={s} value={s}>{s || '— sin estatus —'}</option>)}
-                </select>
-              </div>
-            ))}
-            <div style={{ marginBottom:12 }}>
-              <label style={{ fontSize:12, color:'#aaa', display:'block', marginBottom:4 }}>Observación <span style={{ fontStyle:'italic' }}>(opcional)</span></label>
-              <textarea value={form.obs || ''} onChange={e => setForm(f => ({ ...f, obs: e.target.value }))}
-                style={{ width:'100%', padding:'8px 10px', background:'#111', border:'1px solid #333', borderRadius:8, color:'#fff', fontSize:13, minHeight:70, resize:'vertical', boxSizing:'border-box' }}
-                placeholder="Bloqueos, notas..." />
-            </div>
-            <div style={{ marginBottom:12 }}>
-              <label style={{ fontSize:12, color:'#aaa', display:'block', marginBottom:4 }}>Fase general</label>
-              <div style={{ padding:'8px 10px', background:'#111', border:'1px solid #2a2a2a', borderRadius:8, color:'#888', fontSize:13 }}>{editCap.phase || 'Pendiente'}</div>
-            </div>
-            <div style={{ marginBottom:12 }}>
-              <label style={{ fontSize:12, color:'#aaa', display:'block', marginBottom:4 }}>Tu fecha de entrega</label>
-              <div style={{ padding:'8px 10px', background:'#111', border:'1px solid #2a2a2a', borderRadius:8, color: (isDX ? editCap.fechas?.dx : editCap.fechas?.[userData?.role]) ? '#9FE1CB' : '#888', fontSize:13 }}>
-                {(isDX ? editCap.fechas?.dx : editCap.fechas?.[userData?.role]) || 'Aún no asignada'}
-              </div>
-            </div>
-            {editCap.obs?.jefe && (
-              <div style={{ marginBottom:12 }}>
-                <label style={{ fontSize:12, color:'#aaa', display:'block', marginBottom:4 }}>Nota del jefe</label>
-                <div style={{ padding:'8px 10px', background:'#1a1500', border:'1px solid #333', borderRadius:8, color:'#FAC775', fontSize:12 }}>{editCap.obs.jefe}</div>
-              </div>
-            )}
-            <div style={{ display:'flex', gap:8, justifyContent:'flex-end', marginTop:16 }}>
-              <button style={{ background:'transparent', border:'1px solid #333', borderRadius:8, color:'#aaa', padding:'7px 16px', fontSize:13, cursor:'pointer' }} onClick={() => setEditCap(null)}>Cancelar</button>
-              <button style={{ background:'#1D9E75', border:'none', borderRadius:8, color:'#fff', padding:'7px 16px', fontSize:13, fontWeight:600, cursor:'pointer', opacity: saving ? .6 : 1 }} onClick={save} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-const TH = { padding:'8px 10px', textAlign:'left', fontWeight:500, fontSize:11, color:'#888', borderBottom:'1px solid #222', whiteSpace:'nowrap' }
-const TD = { padding:'8px 10px', verticalAlign:'middle' }
-Listo
