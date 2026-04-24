@@ -39,9 +39,18 @@ export default function Login() {
   }
 
   const handleReset = async () => {
-    if (!email) { setError('Ingresa tu correo primero.'); return }
-    await resetPassword(email)
-    setResetSent(true)
+    if (!email) {
+      // Si no hay correo escrito, pedir que lo ingrese
+      setError('Escribe tu correo arriba y luego haz clic en "¿Olvidaste tu contraseña?"')
+      return
+    }
+    try {
+      await resetPassword(email)
+      setResetSent(true)
+      setError('')
+    } catch(e) {
+      setError('No encontramos ese correo. Verifica que esté bien escrito.')
+    }
   }
 
   const selectRole = (role) => {
@@ -119,6 +128,6 @@ const S = {
   btn: { width: '100%', padding: '11px', background: '#1D9E75', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', marginTop: 6 },
   error: { color: '#F09595', fontSize: 12, margin: '8px 0' },
   success: { color: '#9FE1CB', fontSize: 12, margin: '8px 0' },
-  forgot: { fontSize: 12, color: '#1D9E75', cursor: 'pointer', margin: '14px 0 8px' },
+  forgot: { fontSize: 12, color: '#1D9E75', cursor: 'pointer', margin: '14px 0 8px', textDecoration: 'underline' },
   hint: { fontSize: 11, color: '#555', lineHeight: 1.5, marginTop: 6 },
 }
