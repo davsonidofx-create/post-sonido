@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { listenCaps, listenSeries, updateCap, addObservation, getTeamBySerie } from '../lib/db'
+import { listenCaps, updateCap, addObservation, getTeamBySerie } from '../lib/db'
 import { ROLES, DEPT_LABELS, TASK_STATUSES, PHASE_STYLE, STATUS_STYLE } from '../lib/constants'
 import { notifyBloqueo, notifyCompleto } from '../lib/email'
 
@@ -10,7 +10,6 @@ export default function AppView() {
   const { userData, logout } = useAuth()
   const navigate = useNavigate()
   const [caps, setCaps] = useState([])
-  const [serieName, setSerieName] = useState('')
   const [editCap, setEditCap] = useState(null)
   const [form, setForm] = useState({})
   const [saving, setSaving] = useState(false)
@@ -28,15 +27,11 @@ export default function AppView() {
       navigate('/series')
       return
     }
-    const unsubSeries = listenSeries((list) => {
-      const s = list.find(x => x.id === serieId)
-      if (s) setSerieName(s.name)
-    })
-    const unsubCaps = listenCaps(serieId, (data) => {
+    const unsub = listenCaps(serieId, (data) => {
       setCaps(data)
       setReady(true)
     })
-    return () => { unsubSeries(); unsubCaps() }
+    return unsub
   }, [serieId, userData])
 
   const openEdit = (cap) => {
@@ -67,8 +62,8 @@ export default function AppView() {
         const jefe = team.find(u => u.role === 'jefe')
         const deptLabel = DEPT_LABELS[myKey] || myKey
         if (jefe?.email) {
-          if (newStatus === 'Bloqueado') await notifyBloqueo(userData?.name, deptLabel, editCap.num, serieName || serieId, form.obs, jefe.email)
-          else if (newStatus === 'Completo') await notifyCompleto(userData?.name, deptLabel, editCap.num, serieName || serieId, form.obs, jefe.email)
+          if (newStatus === 'Bloqueado') await notifyBloqueo(userData?.name, deptLabel, editCap.num, serieId, form.obs, jefe.email)
+          else if (newStatus === 'Completo') await notifyCompleto(userData?.name, deptLabel, editCap.num, serieId, form.obs, jefe.email)
         }
       }
     } catch(e) { console.log('email error:', e) }
@@ -115,7 +110,6 @@ export default function AppView() {
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'1rem 1.5rem', borderBottom:'1px solid #222' }}>
         <div>
           <div style={{ fontSize:15, fontWeight:600, color:'#1D9E75', cursor:'pointer' }} onClick={() => navigate('/series')}>← Series</div>
-          <div style={{ fontSize:17, fontWeight:600, marginTop:2 }}>{serieName || '...'}</div>
           <div style={{ display:'flex', gap:8, marginTop:4, alignItems:'center' }}>
             {role && <span style={{ fontSize:11, padding:'3px 10px', borderRadius:20, fontWeight:500, background:role.bg, color:role.color }}>{role.icon} {role.label}</span>}
             <span style={{ fontSize:11, color:'#888' }}>· {userData?.name}</span>
@@ -123,6 +117,7 @@ export default function AppView() {
         </div>
         <button style={{ background:'transparent', border:'1px solid #333', borderRadius:8, color:'#888', padding:'5px 12px', fontSize:12, cursor:'pointer' }} onClick={logout}>Salir</button>
       </div>
+
       <div style={{ padding:'1.5rem' }}>
         <div style={{ display:'flex', gap:8, marginBottom:'1rem', flexWrap:'wrap' }}>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar cap..."
@@ -133,6 +128,7 @@ export default function AppView() {
             {['Pendiente','En proceso','En revision','Pendiente ajustes','Aprobado'].map(p => <option key={p}>{p}</option>)}
           </select>
         </div>
+
         <div style={{ overflowX:'auto', border:'1px solid #222', borderRadius:12 }}>
           <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
             <thead>
@@ -170,10 +166,11 @@ export default function AppView() {
           </table>
         </div>
       </div>
+
       {editCap && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100 }}>
           <div style={{ background:'#1a1a1a', border:'1px solid #333', borderRadius:16, padding:'1.5rem', width:420, maxWidth:'95vw', maxHeight:'85vh', overflowY:'auto' }}>
-            <h3 style={{ fontSize:16, fontWeight:600, margin:'0 0 1rem' }}>Cap. {editCap.num} — {serieName}</h3>
+            <h3 style={{ fontSize:16, fontWeight:600, margin:'0 0 1rem' }}>Cap. {editCap.num}</h3>
             {myKeys.map(k => (
               <div key={k} style={{ marginBottom:12 }}>
                 <label style={{ fontSize:12, color:'#aaa', display:'block', marginBottom:4 }}>{DEPT_LABELS[k] || k} — estatus</label>
