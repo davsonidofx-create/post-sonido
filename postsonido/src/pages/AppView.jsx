@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { notifyBloqueo, notifyCompleto } from '../lib/email'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { listenCaps, updateCap, addObservation } from '../lib/db'
@@ -45,6 +46,21 @@ export default function AppView() {
     if (form.obs && form.obs !== editCap.obs?.[myKey]) {
       await addObservation({ capId: editCap.id, serieId, dept: myKey, text: form.obs, by: userData?.name, byEmail: userData?.email })
     }
+    try {
+      const team = await getTeamBySerie(serieId)
+      const jefe = team.find(u => u.role === 'jefe')
+      const deptLabel = DEPT_LABELS[myKey] || myKey
+      const newStatus = form[`status_${myKey}`] || ''
+      const prevStatus = editCap.status?.[myKey] || ''
+      const serieName = editCap.serieName || serieId
+      if (newStatus !== prevStatus && jefe?.email) {
+        if (newStatus === 'Bloqueado') {
+          await notifyBloqueo(userData?.name, deptLabel, editCap.num, serieName, form.obs, jefe.email)
+        } else if (newStatus === 'Completo') {
+          await notifyCompleto(userData?.name, deptLabel, editCap.num, serieName, form.obs, jefe.email)
+        }
+      }
+    } catch (e) { console.log('Email skipped:', e) }
     setSaving(false)
     setEditCap(null)
   }

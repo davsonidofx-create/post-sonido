@@ -4,6 +4,7 @@ import Login from './pages/Login'
 import Series from './pages/Series'
 import AppView from './pages/AppView'
 import CoordView from './pages/CoordView'
+import SupervisorView from './pages/SupervisorView'
 import JefeView from './pages/JefeView'
 
 function PrivateRoute({ children }) {
@@ -23,6 +24,7 @@ function SmartAppRoute() {
   if (!userData) return null
   if (userData.role === 'coordinadora') return <CoordView />
   if (userData.role === 'jefe') return <JefeView />
+  if (userData.role === 'supervisor') return <SupervisorView />
   return <AppView />
 }
 

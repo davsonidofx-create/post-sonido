@@ -5,6 +5,7 @@ import { listenCaps, updateCap, getTeamBySerie, listenObsBySerie } from '../lib/
 import { doc, setDoc, collection } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { DEPT_KEYS, DEPT_LABELS, CAP_PHASES, PHASE_STYLE, STATUS_STYLE } from '../lib/constants'
+import { notifyFechaAsignada, notifyInvitacion } from '../lib/email'
 
 export default function JefeView() {
   const { serieId } = useParams()
@@ -13,6 +14,7 @@ export default function JefeView() {
   const [caps, setCaps] = useState([])
   const [team, setTeam] = useState([])
   const [obs, setObs] = useState([])
+  const [ST_series, setST_series] = useState([])
   const [tab, setTab] = useState('cronograma')
   const [editCap, setEditCap] = useState(null)
   const [form, setForm] = useState({})
@@ -25,6 +27,7 @@ export default function JefeView() {
     const unsub1 = listenCaps(serieId, setCaps)
     const unsub2 = listenObsBySerie(serieId, setObs)
     getTeamBySerie(serieId).then(setTeam)
+    import('../lib/db').then(m => m.getSeries().then(setST_series))
     return () => { unsub1(); unsub2() }
   }, [serieId])
 
@@ -71,10 +74,21 @@ export default function JefeView() {
 
   const addTeamMember = async () => {
     if (!newUser.name || !newUser.email) return
-    const ref = doc(collection(db, 'invites'))
-    await setDoc(ref, { ...newUser, serieId, invitedBy: userData?.name, invitedAt: new Date().toISOString(), status: 'pending' })
-    setNotif(`Invitación enviada a ${newUser.email}`)
-    setTimeout(() => setNotif(''), 3000)
+    // Save invite in Firestore
+    const inviteRef = doc(collection(db, 'invites'))
+    await setDoc(inviteRef, { ...newUser, serieId, invitedBy: userData?.name, invitedAt: new Date().toISOString(), status: 'pending' })
+    // Send invitation email automatically
+    try {
+      const serie = ST_series.find(s => s.id === serieId)
+      const serieName = serie?.name || serieId
+      const appUrl = window.location.origin
+      const rolLabel = {coordinadora:'Coordinadora',dx:'DX/ADR',fx:'FX',foley:'Foley',musica:'Musicalización',vfx:'VFX',mezcla:'Mezcla',supervisor:'Supervisor'}[newUser.role] || newUser.role
+      await notifyInvitacion(newUser.name, newUser.email, rolLabel, serieName, appUrl, userData?.name)
+      setNotif(`Invitación enviada a ${newUser.email}`)
+    } catch(e) {
+      setNotif(`Usuario agregado. Error al enviar correo: ${e.message}`)
+    }
+    setTimeout(() => setNotif(''), 4000)
     setNewUser({ name: '', email: '', role: 'dx' })
   }
 

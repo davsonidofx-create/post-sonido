@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { listenCaps, createCap } from '../lib/db'
+import { listenCaps, createCap, getTeamBySerie } from '../lib/db'
+import { notifyCapituloSubido } from '../lib/email'
 import { PHASE_STYLE } from '../lib/constants'
 
 export default function CoordView() {
@@ -26,7 +27,16 @@ export default function CoordView() {
     setSaving(true)
     await createCap({ serieId, num: n, notasCoord: notes, subidoBy: userData?.name, subidoAt: new Date().toISOString().split('T')[0] })
     setNum(''); setNotes('')
-    setNotif(`Cap. ${n} notificado. El equipo recibirá un correo.`)
+    // Enviar correos automáticos a todo el equipo
+    try {
+      const team = await getTeamBySerie(serieId)
+      const teamEmails = team.filter(u => u.role !== 'coordinadora').map(u => u.email).filter(Boolean)
+      const s = team[0]
+      if (teamEmails.length > 0) {
+        await notifyCapituloSubido(n, serieId, teamEmails, userData?.name, notes)
+      }
+    } catch (e) { console.log('Email skipped:', e) }
+    setNotif(`Cap. ${n} notificado. Correos enviados al equipo.`)
     setTimeout(() => setNotif(''), 4000)
     setSaving(false)
   }
