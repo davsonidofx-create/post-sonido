@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { listenCaps, updateCap, getTeamBySerie, listenObsBySerie } from '../lib/db'
+import { listenCaps, updateCap, getTeamBySerie, listenObsBySerie, getSeries } from '../lib/db'
 import { doc, setDoc, collection } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { DEPT_KEYS, DEPT_LABELS, CAP_PHASES, PHASE_STYLE, STATUS_STYLE } from '../lib/constants'
 import { notifyFechaAsignada, notifyInvitacion } from '../lib/email'
 
 
-function FechasTab({ caps, updateCap, setNotif, team, userData, serieId }) {
+function FechasTab({ caps, updateCap, setNotif, team, userData, serieId, serieName }) {
   const [localFechas, setLocalFechas] = React.useState({})
 
   React.useEffect(() => {
@@ -32,12 +32,23 @@ function FechasTab({ caps, updateCap, setNotif, team, userData, serieId }) {
     // Send email notifications
     try {
       const { notifyFechaAsignada } = await import('../lib/email')
+      const { collection, query, where, getDocs } = await import('firebase/firestore')
+      const { db } = await import('../lib/firebase')
+      const DEPT_LABELS_LOCAL = { dx:'DX', adr:'ADR', fx:'FX', foley:'Foley', musica:'Musicalización', vfx:'VFX', mezcla:'Mezcla' }
+      const DEPT_ROLE_MAP = { dx:'dx', adr:'dx', fx:'fx', foley:'foley', musica:'musica', vfx:'vfx', mezcla:'mezcla' }
+
+      // Get all users in this serie
+      const q = query(collection(db, 'users'), where('series', 'array-contains', serieId))
+      const snap = await getDocs(q)
+      const allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+
       for (const k of Object.keys(fechas)) {
         if (!fechas[k]) continue
-        const member = team.find(u => u.role === k || (k === 'adr' && u.role === 'dx'))
+        const roleToFind = DEPT_ROLE_MAP[k] || k
+        const member = allUsers.find(u => u.role === roleToFind)
         if (member?.email) {
-          const deptLabel = { dx:'DX', adr:'ADR', fx:'FX', foley:'Foley', musica:'Musicalización', vfx:'VFX', mezcla:'Mezcla' }[k] || k
-          await notifyFechaAsignada(deptLabel, c.num, serieId, fechas[k], member.email, userData?.name)
+          const deptLabel = DEPT_LABELS_LOCAL[k] || k
+          await notifyFechaAsignada(deptLabel, c.num, serieName || serieId, fechas[k], member.email, userData?.name)
         }
       }
     } catch(e) { console.log('Email error:', e) }
@@ -98,9 +109,11 @@ export default function JefeView() {
   const { userData, logout } = useAuth()
   const navigate = useNavigate()
   const [caps, setCaps] = useState([])
+  const [loading, setLoading] = useState(true)
   const [team, setTeam] = useState([])
   const [obs, setObs] = useState([])
   const [ST_series, setST_series] = useState([])
+  const [serieName, setSerieName] = useState('')
   const [tab, setTab] = useState('cronograma')
   const [editCap, setEditCap] = useState(null)
   const [form, setForm] = useState({})
@@ -109,13 +122,18 @@ export default function JefeView() {
   const [newUser, setNewUser] = useState({ name: '', email: '', role: 'dx' })
 
   useEffect(() => {
-    if (!userData?.series?.includes(serieId)) { navigate('/series'); return }
+    if (!userData) {
+      setLoading(true)
+      return
+    }
+    setLoading(false)
+    if (userData.series && !userData.series.includes(serieId)) { navigate('/series'); return }
     const unsub1 = listenCaps(serieId, setCaps)
     const unsub2 = listenObsBySerie(serieId, setObs)
     getTeamBySerie(serieId).then(setTeam)
-    import('../lib/db').then(m => m.getSeries().then(setST_series))
+    getSeries().then(list => { setST_series(list); const s = list.find(x => x.id === serieId); if (s) setSerieName(s.name) })
     return () => { unsub1(); unsub2() }
-  }, [serieId])
+  }, [serieId, userData])
 
   const phBadge = (p) => {
     const st = PHASE_STYLE[p] || PHASE_STYLE['Pendiente']
@@ -219,6 +237,14 @@ export default function JefeView() {
   const stats = { total: caps.length, ap: caps.filter(c => c.phase === 'Aprobado').length, er: caps.filter(c => c.phase === 'En revision').length, pa: caps.filter(c => c.phase === 'Pendiente ajustes').length }
 
   const ROLES_OPTS = ['dx','fx','foley','musica','vfx','mezcla','coordinadora']
+
+  if (loading || !userData) return (
+    <div style={{ minHeight:'100vh', background:'#0f0f0f', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', color:'#888', fontFamily:"'DM Sans', sans-serif", gap:12 }}>
+      <div style={{ width:32, height:32, border:'3px solid #333', borderTop:'3px solid #1D9E75', borderRadius:'50%', animation:'spin 1s linear infinite' }} />
+      <div style={{ fontSize:13 }}>Cargando...</div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+    </div>
+  )
 
   return (
     <div style={S.page}>

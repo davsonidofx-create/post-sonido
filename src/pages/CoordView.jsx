@@ -10,15 +10,24 @@ export default function CoordView() {
   const { userData, logout } = useAuth()
   const navigate = useNavigate()
   const [caps, setCaps] = useState([])
+  const [loading, setLoading] = useState(true)
   const [num, setNum] = useState('')
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [notif, setNotif] = useState('')
 
+  const [serieName, setSerieName] = useState('')
+
   useEffect(() => {
-    if (!userData?.series?.includes(serieId)) { navigate('/series'); return }
+    if (!userData) {
+      setLoading(true)
+      return
+    }
+    setLoading(false)
+    if (userData.series && !userData.series.includes(serieId)) { navigate('/series'); return }
+
     return listenCaps(serieId, setCaps)
-  }, [serieId])
+  }, [serieId, userData])
 
   const notificar = async () => {
     const n = parseInt(num)
@@ -33,7 +42,7 @@ export default function CoordView() {
       const teamEmails = team.filter(u => u.role !== 'coordinadora').map(u => u.email).filter(Boolean)
       const s = team[0]
       if (teamEmails.length > 0) {
-        await notifyCapituloSubido(n, serieId, teamEmails, userData?.name, notes)
+        await notifyCapituloSubido(n, serieName || serieId, teamEmails, userData?.name, notes)
       }
     } catch (e) { console.log('Email skipped:', e) }
     setNotif(`Cap. ${n} notificado. Correos enviados al equipo.`)
