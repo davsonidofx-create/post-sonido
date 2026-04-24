@@ -10,6 +10,7 @@ export default function AppView() {
   const { userData, logout } = useAuth()
   const navigate = useNavigate()
   const [caps, setCaps] = useState([])
+  const [loading, setLoading] = useState(true)
   const [editCap, setEditCap] = useState(null)
   const [form, setForm] = useState({})
   const [saving, setSaving] = useState(false)
@@ -101,7 +102,13 @@ export default function AppView() {
     return <span style={{ fontSize: 11, color: diff < 0 ? '#F09595' : diff <= 2 ? '#FAC775' : '#aaa', fontWeight: diff <= 2 ? 600 : 400 }}>{fmt}{diff < 0 ? ' (vencido)' : diff <= 2 ? ` (${diff}d)` : ''}</span>
   }
 
-  if (!userData) return <div style={{ minHeight:'100vh', background:'#0f0f0f', display:'flex', alignItems:'center', justifyContent:'center', color:'#888', fontFamily:"'DM Sans', sans-serif" }}>Cargando...</div>
+  if (loading || !userData) return (
+    <div style={{ minHeight:'100vh', background:'#0f0f0f', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', color:'#888', fontFamily:"'DM Sans', sans-serif", gap:12 }}>
+      <div style={{ width:32, height:32, border:'3px solid #333', borderTop:'3px solid #1D9E75', borderRadius:'50%', animation:'spin 1s linear infinite' }} />
+      <div style={{ fontSize:13 }}>Cargando...</div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+    </div>
+  )
 
   return (
     <div style={styles.page}>

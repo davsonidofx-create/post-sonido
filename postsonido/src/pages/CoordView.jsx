@@ -10,6 +10,7 @@ export default function CoordView() {
   const { userData, logout } = useAuth()
   const navigate = useNavigate()
   const [caps, setCaps] = useState([])
+  const [loading, setLoading] = useState(true)
   const [num, setNum] = useState('')
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
@@ -18,7 +19,11 @@ export default function CoordView() {
   const [serieName, setSerieName] = useState('')
 
   useEffect(() => {
-    if (!userData) return
+    if (!userData) {
+      setLoading(true)
+      return
+    }
+    setLoading(false)
     if (userData.series && !userData.series.includes(serieId)) { navigate('/series'); return }
     getSeries().then(series => {
       const s = series.find(x => x.id === serieId)

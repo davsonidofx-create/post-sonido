@@ -109,6 +109,7 @@ export default function JefeView() {
   const { userData, logout } = useAuth()
   const navigate = useNavigate()
   const [caps, setCaps] = useState([])
+  const [loading, setLoading] = useState(true)
   const [team, setTeam] = useState([])
   const [obs, setObs] = useState([])
   const [ST_series, setST_series] = useState([])
@@ -121,7 +122,11 @@ export default function JefeView() {
   const [newUser, setNewUser] = useState({ name: '', email: '', role: 'dx' })
 
   useEffect(() => {
-    if (!userData) return
+    if (!userData) {
+      setLoading(true)
+      return
+    }
+    setLoading(false)
     if (userData.series && !userData.series.includes(serieId)) { navigate('/series'); return }
     const unsub1 = listenCaps(serieId, setCaps)
     const unsub2 = listenObsBySerie(serieId, setObs)
@@ -236,6 +241,14 @@ export default function JefeView() {
   const stats = { total: caps.length, ap: caps.filter(c => c.phase === 'Aprobado').length, er: caps.filter(c => c.phase === 'En revision').length, pa: caps.filter(c => c.phase === 'Pendiente ajustes').length }
 
   const ROLES_OPTS = ['dx','fx','foley','musica','vfx','mezcla','coordinadora']
+
+  if (loading || !userData) return (
+    <div style={{ minHeight:'100vh', background:'#0f0f0f', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', color:'#888', fontFamily:"'DM Sans', sans-serif", gap:12 }}>
+      <div style={{ width:32, height:32, border:'3px solid #333', borderTop:'3px solid #1D9E75', borderRadius:'50%', animation:'spin 1s linear infinite' }} />
+      <div style={{ fontSize:13 }}>Cargando...</div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+    </div>
+  )
 
   return (
     <div style={S.page}>
