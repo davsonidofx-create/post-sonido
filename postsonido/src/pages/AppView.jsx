@@ -22,14 +22,18 @@ export default function AppView() {
   const [serieName, setSerieName] = useState('')
 
   useEffect(() => {
-    if (!userData?.series?.includes(serieId)) { navigate('/series'); return }
+    // Wait for userData to fully load before checking access
+    if (!userData) return
+    if (userData.series && !userData.series.includes(serieId)) {
+      navigate('/series'); return
+    }
     // Load serie name
     getSeries().then(series => {
       const s = series.find(x => x.id === serieId)
       if (s) setSerieName(s.name)
     })
     return listenCaps(serieId, setCaps)
-  }, [serieId])
+  }, [serieId, userData])
 
   const myKeys = isDX ? ['dx', 'adr'] : [userData?.role]
 
@@ -96,6 +100,8 @@ export default function AppView() {
     const fmt = dt.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })
     return <span style={{ fontSize: 11, color: diff < 0 ? '#F09595' : diff <= 2 ? '#FAC775' : '#aaa', fontWeight: diff <= 2 ? 600 : 400 }}>{fmt}{diff < 0 ? ' (vencido)' : diff <= 2 ? ` (${diff}d)` : ''}</span>
   }
+
+  if (!userData) return <div style={{ minHeight:'100vh', background:'#0f0f0f', display:'flex', alignItems:'center', justifyContent:'center', color:'#888', fontFamily:"'DM Sans', sans-serif" }}>Cargando...</div>
 
   return (
     <div style={styles.page}>

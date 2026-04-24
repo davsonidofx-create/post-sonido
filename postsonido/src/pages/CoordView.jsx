@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { listenCaps, createCap, getTeamBySerie } from '../lib/db'
+import { listenCaps, createCap, getTeamBySerie, getSeries } from '../lib/db'
 import { notifyCapituloSubido } from '../lib/email'
 import { PHASE_STYLE } from '../lib/constants'
 
@@ -15,10 +15,17 @@ export default function CoordView() {
   const [saving, setSaving] = useState(false)
   const [notif, setNotif] = useState('')
 
+  const [serieName, setSerieName] = useState('')
+
   useEffect(() => {
-    if (!userData?.series?.includes(serieId)) { navigate('/series'); return }
+    if (!userData) return
+    if (userData.series && !userData.series.includes(serieId)) { navigate('/series'); return }
+    getSeries().then(series => {
+      const s = series.find(x => x.id === serieId)
+      if (s) setSerieName(s.name)
+    })
     return listenCaps(serieId, setCaps)
-  }, [serieId])
+  }, [serieId, userData])
 
   const notificar = async () => {
     const n = parseInt(num)
@@ -33,7 +40,7 @@ export default function CoordView() {
       const teamEmails = team.filter(u => u.role !== 'coordinadora').map(u => u.email).filter(Boolean)
       const s = team[0]
       if (teamEmails.length > 0) {
-        await notifyCapituloSubido(n, serieId, teamEmails, userData?.name, notes)
+        await notifyCapituloSubido(n, serieName || serieId, teamEmails, userData?.name, notes)
       }
     } catch (e) { console.log('Email skipped:', e) }
     setNotif(`Cap. ${n} notificado. Correos enviados al equipo.`)

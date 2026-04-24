@@ -8,7 +8,7 @@ import { DEPT_KEYS, DEPT_LABELS, CAP_PHASES, PHASE_STYLE, STATUS_STYLE } from '.
 import { notifyFechaAsignada, notifyInvitacion } from '../lib/email'
 
 
-function FechasTab({ caps, updateCap, setNotif, team, userData, serieId }) {
+function FechasTab({ caps, updateCap, setNotif, team, userData, serieId, serieName }) {
   const [localFechas, setLocalFechas] = React.useState({})
 
   React.useEffect(() => {
@@ -48,7 +48,7 @@ function FechasTab({ caps, updateCap, setNotif, team, userData, serieId }) {
         const member = allUsers.find(u => u.role === roleToFind)
         if (member?.email) {
           const deptLabel = DEPT_LABELS_LOCAL[k] || k
-          await notifyFechaAsignada(deptLabel, c.num, serieId, fechas[k], member.email, userData?.name)
+          await notifyFechaAsignada(deptLabel, c.num, serieName || serieId, fechas[k], member.email, userData?.name)
         }
       }
     } catch(e) { console.log('Email error:', e) }
@@ -112,6 +112,7 @@ export default function JefeView() {
   const [team, setTeam] = useState([])
   const [obs, setObs] = useState([])
   const [ST_series, setST_series] = useState([])
+  const [serieName, setSerieName] = useState('')
   const [tab, setTab] = useState('cronograma')
   const [editCap, setEditCap] = useState(null)
   const [form, setForm] = useState({})
@@ -120,13 +121,18 @@ export default function JefeView() {
   const [newUser, setNewUser] = useState({ name: '', email: '', role: 'dx' })
 
   useEffect(() => {
-    if (!userData?.series?.includes(serieId)) { navigate('/series'); return }
+    if (!userData) return
+    if (userData.series && !userData.series.includes(serieId)) { navigate('/series'); return }
     const unsub1 = listenCaps(serieId, setCaps)
     const unsub2 = listenObsBySerie(serieId, setObs)
     getTeamBySerie(serieId).then(setTeam)
-    import('../lib/db').then(m => m.getSeries().then(setST_series))
+    getSeries().then(series => {
+      const s = series.find(x => x.id === serieId)
+      if (s) { setSerieName(s.name); setST_series(series) }
+      else setST_series(series)
+    })
     return () => { unsub1(); unsub2() }
-  }, [serieId])
+  }, [serieId, userData])
 
   const phBadge = (p) => {
     const st = PHASE_STYLE[p] || PHASE_STYLE['Pendiente']
