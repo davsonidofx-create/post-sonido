@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { listenCaps, updateCap, getTeamBySerie, listenObsBySerie } from '../lib/db'
@@ -6,6 +6,92 @@ import { doc, setDoc, collection } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { DEPT_KEYS, DEPT_LABELS, CAP_PHASES, PHASE_STYLE, STATUS_STYLE } from '../lib/constants'
 import { notifyFechaAsignada, notifyInvitacion } from '../lib/email'
+
+
+function FechasTab({ caps, updateCap, setNotif, team, userData, serieId }) {
+  const [localFechas, setLocalFechas] = React.useState({})
+
+  React.useEffect(() => {
+    const init = {}
+    caps.forEach(c => {
+      init[c.id] = { ...c.fechas }
+    })
+    setLocalFechas(init)
+  }, [caps])
+
+  const handleChange = (capId, k, val) => {
+    setLocalFechas(prev => ({
+      ...prev,
+      [capId]: { ...prev[capId], [k]: val }
+    }))
+  }
+
+  const handleSave = async (c) => {
+    const fechas = localFechas[c.id] || {}
+    await updateCap(c.id, { fechas })
+    // Send email notifications
+    try {
+      const { notifyFechaAsignada } = await import('../lib/email')
+      for (const k of Object.keys(fechas)) {
+        if (!fechas[k]) continue
+        const member = team.find(u => u.role === k || (k === 'adr' && u.role === 'dx'))
+        if (member?.email) {
+          const deptLabel = { dx:'DX', adr:'ADR', fx:'FX', foley:'Foley', musica:'Musicalización', vfx:'VFX', mezcla:'Mezcla' }[k] || k
+          await notifyFechaAsignada(deptLabel, c.num, serieId, fechas[k], member.email, userData?.name)
+        }
+      }
+    } catch(e) { console.log('Email error:', e) }
+    setNotif(`Fechas Cap. ${c.num} guardadas y notificadas.`)
+    setTimeout(() => setNotif(''), 3000)
+  }
+
+  const phBadge = (p) => {
+    const PHASE_STYLE = {
+      'Pendiente':{bg:'#F1EFE8',color:'#444441'},
+      'En proceso':{bg:'#FAEEDA',color:'#633806'},
+      'Completo':{bg:'#EAF3DE',color:'#27500A'},
+      'En revision':{bg:'#E6F1FB',color:'#0C447C'},
+      'Pendiente ajustes':{bg:'#FAEEDA',color:'#854F0B'},
+      'Aprobado':{bg:'#EAF3DE',color:'#3B6D11'},
+    }
+    const st = PHASE_STYLE[p] || PHASE_STYLE['Pendiente']
+    return <span style={{ fontSize:10, fontWeight:500, padding:'2px 8px', borderRadius:20, background:st.bg, color:st.color }}>{p||'Pendiente'}</span>
+  }
+
+  const DEPT_KEYS = ['dx','adr','fx','foley','musica','vfx','mezcla']
+  const DEPT_LABELS = {dx:'DX',adr:'ADR',fx:'FX',foley:'Foley',musica:'Musicalización',vfx:'VFX',mezcla:'Mezcla'}
+
+  if (caps.length === 0) return <p style={{ color:'#888',fontSize:13 }}>No hay capítulos disponibles.</p>
+
+  return (
+    <div>
+      {caps.map(c => (
+        <div key={c.id} style={{ background:'#1a1a1a', border:'1px solid #2a2a2a', borderRadius:12, padding:'1.25rem', marginBottom:10 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
+            <span style={{ fontWeight:600 }}>Cap. {c.num}</span>{phBadge(c.phase)}
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))', gap:8, marginBottom:12 }}>
+            {DEPT_KEYS.map(k => (
+              <div key={k}>
+                <div style={{ fontSize:11, color:'#aaa', marginBottom:3 }}>{DEPT_LABELS[k]}</div>
+                <input type="date"
+                  style={{ width:'100%', padding:'5px 8px', background:'#111', border:'1px solid #333', borderRadius:8, color:'#fff', fontSize:11, boxSizing:'border-box' }}
+                  value={(localFechas[c.id]?.[k]) || ''}
+                  onChange={e => handleChange(c.id, k, e.target.value)}
+                />
+              </div>
+            ))}
+          </div>
+          <button
+            style={{ padding:'6px 14px', background:'#1D9E75', border:'none', borderRadius:8, color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer' }}
+            onClick={() => handleSave(c)}>
+            Guardar y notificar fechas
+          </button>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export default function JefeView() {
   const { serieId } = useParams()
