@@ -6,7 +6,7 @@ Aplicación web completa para gestión de post producción de sonido con autenti
 - **React + Vite** — Frontend
 - **Firebase Auth** — Login con correo y contraseña
 - **Firestore** — Base de datos en tiempo real
-- **Vercel** — Hosting gratuito
+- **Vercel** — Hosting gratuito 
 
 ---
 
