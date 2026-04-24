@@ -14,7 +14,7 @@ const sendToMultiple = (emails, subject, message, name = 'Post Sonido') => {
   return Promise.all(emails.filter(Boolean).map(e => send(e, subject, message, name)))
 }
 
-// Coordinadora notifica capítulo → todo el equipo (inmediato)
+// Coordinadora notifica capítulo → todo el equipo
 export const notifyCapituloSubido = (capNum, serieName, teamEmails, coordName, notas) => {
   const subject = `[${serieName}] Cap. ${capNum} disponible — pueden comenzar`
   const message = `Hola equipo,
@@ -42,7 +42,7 @@ Por favor gestionar con urgencia.
   return send(jefeEmail, subject, message, userName)
 }
 
-// Completo → solo al jefe (inmediato)
+// Completo → solo al jefe
 export const notifyCompleto = (userName, dept, capNum, serieName, obs, jefeEmail) => {
   const subject = `[${serieName}] Completado — ${dept} Cap. ${capNum}`
   const message = `TAREA COMPLETADA
@@ -54,7 +54,7 @@ ${obs ? `\nObservación: ${obs}` : ''}
   return send(jefeEmail, subject, message, userName)
 }
 
-// Jefe asigna fecha → solo el departamento (inmediato)
+// Jefe asigna fecha → solo el departamento
 export const notifyFechaAsignada = (dept, capNum, serieName, fecha, userEmail, jefeName) => {
   const subject = `[${serieName}] Fecha asignada — ${dept} Cap. ${capNum}`
   const message = `Hola,
@@ -70,19 +70,20 @@ Por favor confirma el recibo y reporta cualquier bloqueo a tiempo.
   return send(userEmail, subject, message, jefeName)
 }
 
-// Invitación al proyecto → le llega a la persona invitada
+// Invitación al proyecto
 export const notifyInvitacion = (personName, personEmail, role, serieName, appUrl, jefeName) => {
   const subject = `Invitación al proyecto "${serieName}" — Post Producción de Sonido`
   const message = `Hola ${personName},
 
-${jefeName} te ha invitado a unirte al proyecto "${serieName}" como ${role} en el sistema de Post Producción de Sonido.
+${jefeName} te invitó a unirte al proyecto "${serieName}" como ${role}.
 
 Para entrar a la app sigue estos pasos:
 
 1. Abre este link: ${appUrl}
-2. Ingresa con tu correo: ${personEmail}
-3. Contraseña temporal: Sonido2026
-4. Una vez adentro puedes cambiar tu contraseña en la opción "¿Olvidaste tu contraseña?"
+2. Selecciona tu rol: ${role}
+3. Ingresa con tu correo: ${personEmail}
+4. Contraseña temporal: Sonido2026
+5. Cambia tu contraseña desde "¿Olvidaste tu contraseña?"
 
 — ${jefeName}
 Sistema Post Producción de Sonido`
@@ -93,22 +94,19 @@ Sistema Post Producción de Sonido`
 export const notifyResumenDiario = (resumen, serieName, jefeEmail, supervisorEmails = []) => {
   const hoy = new Date().toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })
   const subject = `[${serieName}] Resumen diario — ${hoy}`
-  const completadosText = resumen.completados?.length > 0
-    ? `COMPLETADOS:\n${resumen.completados.map(r => `  • Cap. ${r.cap} — ${r.dept} (${r.nombre})`).join('\n')}`
-    : ''
-  const bloqueadosText = resumen.bloqueados?.length > 0
-    ? `BLOQUEADOS:\n${resumen.bloqueados.map(r => `  • Cap. ${r.cap} — ${r.dept} (${r.nombre})${r.obs ? ': ' + r.obs : ''}`).join('\n')}`
-    : ''
-  const enProcesoText = resumen.enProceso?.length > 0
-    ? `EN PROCESO:\n${resumen.enProceso.map(r => `  • Cap. ${r.cap} — ${r.dept} (${r.nombre})`).join('\n')}`
-    : ''
+  const completados = resumen.completados?.length > 0
+    ? `COMPLETADOS:\n${resumen.completados.map(r => `  • Cap. ${r.cap} — ${r.dept} (${r.nombre})`).join('\n')}` : ''
+  const bloqueados = resumen.bloqueados?.length > 0
+    ? `BLOQUEADOS:\n${resumen.bloqueados.map(r => `  • Cap. ${r.cap} — ${r.dept} (${r.nombre})${r.obs ? ': ' + r.obs : ''}`).join('\n')}` : ''
+  const enProceso = resumen.enProceso?.length > 0
+    ? `EN PROCESO:\n${resumen.enProceso.map(r => `  • Cap. ${r.cap} — ${r.dept} (${r.nombre})`).join('\n')}` : ''
   const message = `RESUMEN DEL DÍA — ${hoy}
 Serie: ${serieName}
 
-${completadosText}
-${bloqueadosText}
-${enProcesoText}
-${!completadosText && !bloqueadosText && !enProcesoText ? 'Sin actividad registrada hoy.' : ''}
+${completados}
+${bloqueados}
+${enProceso}
+${!completados && !bloqueados && !enProceso ? 'Sin actividad registrada hoy.' : ''}
 
 — Sistema Post Producción de Sonido`
   const recipients = [jefeEmail, ...supervisorEmails].filter(Boolean)

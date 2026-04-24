@@ -74,22 +74,60 @@ export default function JefeView() {
 
   const addTeamMember = async () => {
     if (!newUser.name || !newUser.email) return
-    // Save invite in Firestore
-    const inviteRef = doc(collection(db, 'invites'))
-    await setDoc(inviteRef, { ...newUser, serieId, invitedBy: userData?.name, invitedAt: new Date().toISOString(), status: 'pending' })
-    // Send invitation email automatically
+    setSaving(true)
     try {
+      // 1. Buscar si ya existe el usuario en Firestore por email
+      const { collection: col, query, where, getDocs, setDoc, doc: firestoreDoc, arrayUnion, updateDoc } = await import('firebase/firestore')
+      const { db: firestoreDb } = await import('../lib/firebase')
+
+      const q = query(col(firestoreDb, 'users'), where('email', '==', newUser.email.toLowerCase().trim()))
+      const snap = await getDocs(q)
+
+      if (!snap.empty) {
+        // Usuario ya existe — solo agregar la serie si no la tiene
+        const existingDoc = snap.docs[0]
+        const existingData = existingDoc.data()
+        if (!existingData.series?.includes(serieId)) {
+          await updateDoc(firestoreDoc(firestoreDb, 'users', existingDoc.id), {
+            series: arrayUnion(serieId)
+          })
+        }
+      } else {
+        // Usuario nuevo — crear documento en users con un ID temporal basado en email
+        const tempId = 'pending_' + newUser.email.replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now()
+        await setDoc(firestoreDoc(firestoreDb, 'users', tempId), {
+          name: newUser.name.trim(),
+          email: newUser.email.toLowerCase().trim(),
+          role: newUser.role,
+          series: [serieId],
+          invitedBy: userData?.name,
+          invitedAt: new Date().toISOString(),
+          status: 'pending', // Se actualiza a 'active' cuando el usuario crea su cuenta
+          uid: null,
+        })
+      }
+
+      // 2. Enviar correo de invitacion automaticamente
       const serie = ST_series.find(s => s.id === serieId)
       const serieName = serie?.name || serieId
       const appUrl = window.location.origin
-      const rolLabel = {coordinadora:'Coordinadora',dx:'DX/ADR',fx:'FX',foley:'Foley',musica:'Musicalización',vfx:'VFX',mezcla:'Mezcla',supervisor:'Supervisor'}[newUser.role] || newUser.role
-      await notifyInvitacion(newUser.name, newUser.email, rolLabel, serieName, appUrl, userData?.name)
-      setNotif(`Invitación enviada a ${newUser.email}`)
+      const rolLabel = {
+        coordinadora:'Coordinadora', dx:'DX/ADR', fx:'FX',
+        foley:'Foley', musica:'Musicalización', vfx:'VFX',
+        mezcla:'Mezcla', supervisor:'Supervisor'
+      }[newUser.role] || newUser.role
+
+      await notifyInvitacion(newUser.name.trim(), newUser.email.trim(), rolLabel, serieName, appUrl, userData?.name)
+      setNotif(`✓ ${newUser.name} agregado y notificado por correo.`)
+
     } catch(e) {
-      setNotif(`Usuario agregado. Error al enviar correo: ${e.message}`)
+      console.error('Error adding team member:', e)
+      setNotif(`Error al agregar usuario: ${e.message}`)
     }
-    setTimeout(() => setNotif(''), 4000)
+    setTimeout(() => setNotif(''), 5000)
     setNewUser({ name: '', email: '', role: 'dx' })
+    setSaving(false)
+    getTeamBySerie(serieId).then(setTeam)
   }
 
   const stats = { total: caps.length, ap: caps.filter(c => c.phase === 'Aprobado').length, er: caps.filter(c => c.phase === 'En revision').length, pa: caps.filter(c => c.phase === 'Pendiente ajustes').length }

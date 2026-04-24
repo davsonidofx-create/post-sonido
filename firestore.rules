@@ -2,34 +2,33 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Usuarios: solo pueden leer/editar su propio documento
     match /users/{uid} {
       allow read: if request.auth != null;
-      allow write: if request.auth.uid == uid;
+      allow write: if request.auth != null && (
+        request.auth.uid == uid ||
+        uid.matches('pending_.*') ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'jefe'
+      );
     }
 
-    // Series: cualquier usuario autenticado puede leer
     match /series/{serieId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'jefe';
     }
 
-    // Capítulos: lectura para usuarios de la serie, escritura según rol
     match /caps/{capId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'coordinadora';
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['coordinadora', 'jefe'];
       allow update: if request.auth != null;
     }
 
-    // Observaciones: lectura para todos, escritura para autenticados
     match /observations/{obsId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null;
     }
 
-    // Invitaciones: solo el jefe puede crear
     match /invites/{inviteId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null &&
