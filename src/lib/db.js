@@ -27,7 +27,15 @@ export const getSeries = async () => {
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
-export const createSerie = (data) => addDoc(collection(db, 'series'), { ...data, createdAt: serverTimestamp() })
+export const createSerie = async (data) => {
+  const ref = await addDoc(collection(db, 'series'), { ...data, createdAt: serverTimestamp() })
+  return { id: ref.id, ...data }
+}
+
+export const addSeriesToUser = (uid, serieId) => {
+  const { arrayUnion } = require('firebase/firestore')
+  return updateDoc(doc(db, 'users', uid), { series: arrayUnion(serieId) })
+}
 
 export const listenSeries = (cb) => onSnapshot(collection(db, 'series'), snap => {
   cb(snap.docs.map(d => ({ id: d.id, ...d.data() })))
