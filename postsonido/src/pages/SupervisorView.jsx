@@ -47,14 +47,6 @@ export default function SupervisorView() {
   ).length
   const enRevision = Object.values(allCaps).flat().filter(c => c.phase === 'En revision').length
 
-  if (!userData) return (
-    <div style={{ minHeight:'100vh', background:'#0f0f0f', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', color:'#888', fontFamily:"'DM Sans', sans-serif", gap:12 }}>
-      <div style={{ width:32, height:32, border:'3px solid #333', borderTop:'3px solid #1D9E75', borderRadius:'50%', animation:'spin 1s linear infinite' }} />
-      <div style={{ fontSize:13 }}>Cargando...</div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-    </div>
-  )
-
   return (
     <div style={S.page}>
       <div style={S.topbar}>

@@ -4,6 +4,7 @@ import {
   addDoc, query, where, orderBy, onSnapshot, serverTimestamp
 } from 'firebase/firestore'
 
+// ── USUARIOS ──────────────────────────────────────────────
 export const getUser = (uid) => getDoc(doc(db, 'users', uid))
 
 export const updateUser = (uid, data) => updateDoc(doc(db, 'users', uid), data)
@@ -20,6 +21,7 @@ export const getTeamBySerie = async (serieId) => {
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
+// ── SERIES ────────────────────────────────────────────────
 export const getSeries = async () => {
   const snap = await getDocs(collection(db, 'series'))
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
@@ -30,25 +32,25 @@ export const createSerie = async (data) => {
   return { id: ref.id, ...data }
 }
 
+export const addSeriesToUser = (uid, serieId) => {
+  const { arrayUnion } = require('firebase/firestore')
+  return updateDoc(doc(db, 'users', uid), { series: arrayUnion(serieId) })
+}
+
 export const listenSeries = (cb) => onSnapshot(collection(db, 'series'), snap => {
   cb(snap.docs.map(d => ({ id: d.id, ...d.data() })))
 })
 
+// ── CAPÍTULOS ─────────────────────────────────────────────
 export const getCaps = async (serieId) => {
-  const q = query(collection(db, 'caps'), where('serieId', '==', serieId))
+  const q = query(collection(db, 'caps'), where('serieId', '==', serieId), orderBy('num'))
   const snap = await getDocs(q)
-  const caps = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-  caps.sort((a, b) => (a.num || 0) - (b.num || 0))
-  return caps
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
 export const listenCaps = (serieId, cb) => {
-  const q = query(collection(db, 'caps'), where('serieId', '==', serieId))
-  return onSnapshot(q, snap => {
-    const caps = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-    caps.sort((a, b) => (a.num || 0) - (b.num || 0))
-    cb(caps)
-  })
+  const q = query(collection(db, 'caps'), where('serieId', '==', serieId), orderBy('num'))
+  return onSnapshot(q, snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
 }
 
 export const createCap = (data) => addDoc(collection(db, 'caps'), {
@@ -65,19 +67,16 @@ export const createCap = (data) => addDoc(collection(db, 'caps'), {
 
 export const updateCap = (capId, data) => updateDoc(doc(db, 'caps', capId), { ...data, updatedAt: serverTimestamp() })
 
+// ── OBSERVACIONES ─────────────────────────────────────────
 export const getObsByCap = async (capId) => {
-  const q = query(collection(db, 'observations'), where('capId', '==', capId))
+  const q = query(collection(db, 'observations'), where('capId', '==', capId), orderBy('createdAt'))
   const snap = await getDocs(q)
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
 export const listenObsBySerie = (serieId, cb) => {
-  const q = query(collection(db, 'observations'), where('serieId', '==', serieId))
-  return onSnapshot(q, snap => {
-    const obs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-    obs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
-    cb(obs)
-  })
+  const q = query(collection(db, 'observations'), where('serieId', '==', serieId), orderBy('createdAt', 'desc'))
+  return onSnapshot(q, snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
 }
 
 export const addObservation = (data) => addDoc(collection(db, 'observations'), { ...data, createdAt: serverTimestamp() })
