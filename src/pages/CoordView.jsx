@@ -2,30 +2,22 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { listenCaps, createCap, getTeamBySerie } from '../lib/db'
-import { notifyCapituloSubido } from '../lib/email'
 import { PHASE_STYLE } from '../lib/constants'
+import { notifyCapituloSubido } from '../lib/email'
 
 export default function CoordView() {
   const { serieId } = useParams()
   const { userData, logout } = useAuth()
   const navigate = useNavigate()
   const [caps, setCaps] = useState([])
-  const [loading, setLoading] = useState(true)
   const [num, setNum] = useState('')
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [notif, setNotif] = useState('')
 
-  const [serieName, setSerieName] = useState('')
-
   useEffect(() => {
-    if (!userData) {
-      setLoading(true)
-      return
-    }
-    setLoading(false)
+    if (!userData) return
     if (userData.series && !userData.series.includes(serieId)) { navigate('/series'); return }
-
     return listenCaps(serieId, setCaps)
   }, [serieId, userData])
 
@@ -35,16 +27,14 @@ export default function CoordView() {
     if (caps.find(c => c.num === n)) { alert('Este capítulo ya fue notificado.'); return }
     setSaving(true)
     await createCap({ serieId, num: n, notasCoord: notes, subidoBy: userData?.name, subidoAt: new Date().toISOString().split('T')[0] })
-    setNum(''); setNotes('')
-    // Enviar correos automáticos a todo el equipo
     try {
       const team = await getTeamBySerie(serieId)
       const teamEmails = team.filter(u => u.role !== 'coordinadora').map(u => u.email).filter(Boolean)
-      const s = team[0]
       if (teamEmails.length > 0) {
-        await notifyCapituloSubido(n, serieName || serieId, teamEmails, userData?.name, notes)
+        await notifyCapituloSubido(n, serieId, teamEmails, userData?.name, notes)
       }
-    } catch (e) { console.log('Email skipped:', e) }
+    } catch(e) { console.log('Email skipped:', e) }
+    setNum(''); setNotes('')
     setNotif(`Cap. ${n} notificado. Correos enviados al equipo.`)
     setTimeout(() => setNotif(''), 4000)
     setSaving(false)
